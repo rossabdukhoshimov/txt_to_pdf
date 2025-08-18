@@ -1,0 +1,31 @@
+{
+  "name": "txt_to_pdf",
+  "version": "1.0.0",
+  "description": "Simple macOS desktop app to write text and save as PDF",
+  "main": "main.js",
+  "author": "Khamroz Abdukhoshimov",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.6.0"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
+  },
+  "build": {
+    "appId": "com.example.txttopdf",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  }
+}
+

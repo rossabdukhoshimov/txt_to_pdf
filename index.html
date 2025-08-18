@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to PDF</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Text to PDF</h1>
+      <div class="actions">
+        <button id="newBtn" title="New (⌘N)">New</button>
+        <button id="openBtn" title="Open (⌘O)">Open</button>
+        <button id="savePdfBtn" title="Save (⌘S)">Save</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <input id="docTitle" class="title" type="text" placeholder="Untitled Document" />
+      <div class="toolbar">
+        <button class="tlb" data-cmd="bold" title="Bold (⌘B)"><strong>B</strong></button>
+        <button class="tlb" data-cmd="italic" title="Italic (⌘I)"><em>I</em></button>
+        <button class="tlb" data-cmd="underline" title="Underline (⌘U)"><span style="text-decoration:underline">U</span></button>
+        <span class="sep"></span>
+        <button class="tlb" data-cmd="justifyLeft" title="Align Left">⟸</button>
+        <button class="tlb" data-cmd="justifyCenter" title="Center">⟂</button>
+        <button class="tlb" data-cmd="justifyRight" title="Align Right">⟹</button>
+        <span class="sep"></span>
+        <button class="tlb" data-cmd="insertUnorderedList" title="Bulleted List">• • •</button>
+        <button class="tlb" data-cmd="insertOrderedList" title="Numbered List">1.2.3.</button>
+        <span class="sep"></span>
+        <label class="size-label" for="fontSizeSelect">Size:</label>
+        <select id="fontSizeSelect" class="size-select" title="Text Size">
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12" selected>12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+      <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+  </html>
+
+
