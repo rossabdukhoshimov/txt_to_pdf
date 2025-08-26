@@ -15,7 +15,8 @@
     "electron-builder": "^24.6.0"
   },
   "dependencies": {
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^5.4.54"
   },
   "build": {
     "appId": "com.example.txttopdf",
@@ -28,4 +29,3 @@
     }
   }
 }
-

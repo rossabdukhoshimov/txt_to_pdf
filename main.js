@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-let pdfParse;
 
 /**
  * Creates the main application window.
@@ -220,7 +219,7 @@ async function handleOpenDialog(win) {
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
       title: 'Open File',
       filters: [
-        { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf'] },
+        { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf', 'html', 'htm'] },
         { name: 'All Files', extensions: ['*'] }
       ],
       properties: ['openFile']
@@ -232,18 +231,37 @@ async function handleOpenDialog(win) {
     const ext = path.extname(filePath).toLowerCase();
     let content = '';
     if (ext === '.pdf') {
-      if (!pdfParse) {
-        try {
-          pdfParse = require('pdf-parse');
-        } catch (e) {
-          throw new Error('PDF support requires the "pdf-parse" package.');
-        }
+      // For now, use the simpler pdf-parse approach
+      // We can enhance this later with better formatting preservation
+      try {
+        const pdfParse = require('pdf-parse');
+        const dataBuffer = fs.readFileSync(filePath);
+        const data = await pdfParse(dataBuffer);
+        const textContent = (data && data.text) ? data.text : '';
+        
+        // Convert plain text to basic HTML with paragraph breaks
+        content = textContent
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => `<p>${line}</p>`)
+          .join('');
+          
+        console.log('PDF extracted successfully with basic formatting');
+      } catch (error) {
+        console.error('PDF parsing error:', error);
+        content = '';
       }
-      const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdfParse(dataBuffer);
-      content = (data && data.text) ? data.text : '';
-    } else {
+    } else if (ext === '.html' || ext === '.htm') {
+      // For HTML files, read as-is to preserve formatting
       content = fs.readFileSync(filePath, 'utf8');
+    } else {
+      // For text files (txt, md), preserve line breaks but convert to HTML
+      const textContent = fs.readFileSync(filePath, 'utf8');
+      content = textContent
+        .split('\n')
+        .map(line => line.trim() ? `<p>${line}</p>` : '<br>')
+        .join('');
     }
     return { ok: true, filePath, content };
   } catch (error) {

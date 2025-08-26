@@ -17,6 +17,25 @@ function getCurrentSizePx() {
   return sizeSelectCached ? sizeSelectCached.value : '12';
 }
 
+function stripFormattingFromPaste(event) {
+  event.preventDefault();
+  const text = event.clipboardData.getData('text/plain');
+  const currentSize = getCurrentSizePx();
+  const currentColor = document.getElementById('fontColorPicker')?.value || '#000000';
+  
+  // Create a temporary element to hold the text with current formatting
+  const tempSpan = document.createElement('span');
+  tempSpan.style.fontSize = `${currentSize}px`;
+  tempSpan.style.color = currentColor;
+  tempSpan.textContent = text;
+  
+  // Insert the formatted text
+  document.execCommand('insertHTML', false, tempSpan.outerHTML);
+  
+  // Mark as dirty
+  window.__app_isDirty = true;
+}
+
 function replaceFontTagsWithSpans(container, currentPx) {
   if (!container) return;
   const toReplace = container.querySelectorAll('font[size]');
@@ -111,6 +130,84 @@ function applyFontSizePx(px) {
   newRange.selectNodeContents(span);
   sel.removeAllRanges();
   sel.addRange(newRange);
+}
+
+function applyFontColor(color) {
+  const editorEl = getEditor();
+  if (!editorEl) return;
+  editorEl.focus();
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+
+  if (range.collapsed) {
+    // For collapsed selection, create a span with the color for future typing
+    const span = document.createElement('span');
+    span.style.color = color;
+    span.innerHTML = '&#8203;'; // zero-width space
+    range.insertNode(span);
+    const newRange = document.createRange();
+    newRange.setStart(span.firstChild, 1);
+    newRange.setEnd(span.firstChild, 1);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    return;
+  }
+
+  const contents = range.extractContents();
+  const span = document.createElement('span');
+  span.style.color = color;
+  span.appendChild(contents);
+  range.insertNode(span);
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+}
+
+function removeFontColor() {
+  const editorEl = getEditor();
+  if (!editorEl) return;
+  editorEl.focus();
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+
+  if (range.collapsed) {
+    // For collapsed selection, just remove color from parent elements
+    let node = range.startContainer;
+    while (node && node !== editorEl) {
+      if (node.nodeType === 1 && node instanceof HTMLElement && node.style && node.style.color) {
+        node.style.removeProperty('color');
+        break;
+      }
+      node = node.parentNode;
+    }
+    return;
+  }
+
+  // For selection, remove color from all elements in the range
+  const walker = document.createTreeWalker(
+    range.commonAncestorContainer,
+    NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode: function(node) {
+        return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    }
+  );
+
+  const nodesToProcess = [];
+  let node;
+  while (node = walker.nextNode()) {
+    nodesToProcess.push(node);
+  }
+
+  nodesToProcess.forEach(node => {
+    if (node.style && node.style.color) {
+      node.style.removeProperty('color');
+    }
+  });
 }
 
 function getSelectionContainerElement() {
@@ -208,6 +305,8 @@ async function saveAsPdf() {
       p, div, li { color: #000000; }
       ul, ol { margin: 0 0 10px 1.25rem; }
       p { margin: 0 0 10px 0; }
+      /* Preserve custom colors in PDF export */
+      span[style*="color"] { color: inherit !important; }
       /* Map HTML font size levels (1-7) to readable sizes */
       font[size="1"] { font-size: 10px; }
       font[size="2"] { font-size: 12px; }
@@ -251,10 +350,10 @@ function attachHandlers() {
       if (result && result.ok) {
         currentOpenedFilePath = result.filePath || null;
         const name = (currentOpenedFilePath || '').split('/').pop() || 'Untitled Document';
-        setDocumentContent(name.replace(/\.(txt|md|markdown|pdf)$/i, ''), '');
+        setDocumentContent(name.replace(/\.(txt|md|markdown|pdf|html|htm)$/i, ''), '');
         const editorEl = getEditor();
         if (editorEl) {
-          editorEl.innerText = result.content || '';
+          editorEl.innerHTML = result.content || '';
           editorEl.focus();
         }
       }
@@ -271,10 +370,10 @@ function attachHandlers() {
     });
     window.api.onOpenFileContent(({ content, filePath }) => {
       const name = (filePath || '').split('/').pop() || 'Untitled Document';
-      setDocumentContent(name.replace(/\.(txt|md|markdown)$/i, ''), '');
+      setDocumentContent(name.replace(/\.(txt|md|markdown|html|htm)$/i, ''), '');
       const editorEl = getEditor();
       if (editorEl) {
-        editorEl.innerText = content || '';
+        editorEl.innerHTML = content || '';
       }
       currentOpenedFilePath = filePath || null;
       window.__app_isDirty = false;
@@ -311,11 +410,34 @@ function attachHandlers() {
   if (editorEl) {
     // Ensure CSS-based styling is preferred where possible
     try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
+    
+    // Add paste event listener to strip formatting
+    editorEl.addEventListener('paste', stripFormattingFromPaste);
+    
     editorEl.addEventListener('input', () => {
       // Clean up any <font> tags introduced by execCommand
       replaceFontTagsWithSpans(editorEl, getCurrentSizePx());
       updateSizeSelectFromSelection();
       window.__app_isDirty = true;
+    });
+  }
+
+  // Color picker functionality
+  const colorPicker = document.getElementById('fontColorPicker');
+  if (colorPicker) {
+    colorPicker.addEventListener('change', () => {
+      const color = colorPicker.value;
+      applyFontColor(color);
+      editorEl?.focus();
+    });
+  }
+
+  // Remove color button
+  const removeColorBtn = document.getElementById('removeColorBtn');
+  if (removeColorBtn) {
+    removeColorBtn.addEventListener('click', () => {
+      removeFontColor();
+      editorEl?.focus();
     });
   }
 

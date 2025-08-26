@@ -6,13 +6,20 @@ A minimal Electron desktop editor for macOS that lets you create or open a docum
 Features
 --------
 - New/Open/Save workflow
-  - Open `.txt`, `.md`, or `.pdf` (PDF is imported as text)
+  - Open `.txt`, `.md`, `.html`, or `.pdf` files
+  - PDF files extract text content with basic paragraph formatting
+  - HTML files preserve all formatting
+  - Text files are converted to HTML with proper paragraph breaks
   - Save exports the current document to PDF with a white page background
 - Formatting toolbar
   - Bold, Italic, Underline
   - Align Left/Center/Right
   - Bulleted and Numbered lists
   - Font size chooser (10–24 px)
+  - Font color picker with clear option
+- Smart paste behavior
+  - Pasted text automatically adopts current font size and color
+  - Original formatting is stripped to match destination formatting
 - Smart font sizing behavior
   - Dropdown reflects the current selection/caret size
   - Changing size with no selection applies to new typing
