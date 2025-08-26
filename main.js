@@ -20,31 +20,68 @@ function createMainWindow() {
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
   // Intercept close to implement unsaved-changes prompt
-  mainWindow.on('close', async (e) => {
-    try {
-      const isDirty = await mainWindow.webContents.executeJavaScript('window.__app_isDirty === true');
-      if (!isDirty) {
-        return; // allow close immediately
-      }
-    } catch (_) {
-      // If we cannot determine, fall back to prompting
-    }
+  mainWindow.on('close', (e) => {
+    // Prevent the window from closing immediately
+    e.preventDefault();
+    
+    // Check for unsaved changes synchronously first
+    mainWindow.webContents.executeJavaScript('window.__app_isDirty === true')
+      .then((isDirty) => {
+        if (!isDirty) {
+          // No unsaved changes, allow close
+          mainWindow.close();
+          return;
+        }
+        
+        // Show dialog for unsaved changes
+        dialog.showMessageBox(mainWindow, {
+          type: 'question',
+          buttons: ['Save', 'Quit without Saving', 'Cancel'],
+          defaultId: 0,
+          cancelId: 2,
+          title: 'Unsaved Changes',
+          message: 'There are unsaved changes. What would you like to do?'
+        }).then(({ response }) => {
+          // 0 Save, 1 Quit without Saving, 2 Cancel
+          if (response === 0) {
+            // Save and then close
+            mainWindow.webContents.send('action:save-pdf-and-close');
+          } else if (response === 1) {
+            // Quit without saving
+            mainWindow.close();
+          } else if (response === 2) {
+            // Cancel - window stays open (already prevented)
+          }
+        }).catch(() => {
+          // If dialog fails, allow close
+          mainWindow.close();
+        });
+      })
+      .catch(() => {
+        // If we cannot determine dirty state, allow close
+        mainWindow.close();
+      });
+  });
 
-    const { response } = await dialog.showMessageBox(mainWindow, {
-      type: 'question',
-      buttons: ['Save', 'Quit without Saving', 'Cancel'],
-      defaultId: 0,
-      cancelId: 2,
-      title: 'Unsaved Changes',
-      message: 'There are unsaved changes. What would you like to do?'
-    });
-    // 0 Save, 1 Quit without Saving, 2 Cancel
-    if (response === 0) {
-      e.preventDefault();
-      mainWindow.webContents.send('action:save-pdf-and-close');
-    } else if (response === 2) {
-      e.preventDefault();
-    } // else allow close
+  // Intercept reload and close shortcuts to implement unsaved-changes prompt
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.control || input.meta) {
+      if (input.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        handleReloadWithUnsavedCheck(mainWindow);
+      } else if (input.key.toLowerCase() === 'w') {
+        event.preventDefault();
+        handleCloseWithUnsavedCheck(mainWindow);
+      }
+    }
+  });
+
+  // Also intercept the reload menu item
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    if (navigationUrl === mainWindow.webContents.getURL()) {
+      event.preventDefault();
+      handleReloadWithUnsavedCheck(mainWindow);
+    }
   });
 
   // Build a simple macOS-friendly menu
@@ -70,7 +107,7 @@ function createMainWindow() {
         {
           label: 'New',
           accelerator: 'CommandOrControl+N',
-          click: () => mainWindow.webContents.send('action:new-file')
+          click: () => handleNewWithUnsavedCheck(mainWindow)
         },
         {
           label: 'Open…',
@@ -89,7 +126,11 @@ function createMainWindow() {
           click: () => mainWindow.webContents.send('action:save-pdf')
         },
         { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' }
+        isMac ? { 
+          label: 'Close Window',
+          accelerator: 'CommandOrControl+W',
+          click: () => handleCloseWithUnsavedCheck(mainWindow)
+        } : { role: 'quit' }
       ]
     },
     {
@@ -116,7 +157,28 @@ function createMainWindow() {
               { role: 'delete' },
               { type: 'separator' },
               { role: 'selectAll' }
-            ])
+            ]),
+        { type: 'separator' },
+        {
+          label: 'Text Alignment',
+          submenu: [
+            {
+              label: 'Align Left',
+              accelerator: 'CommandOrControl+L',
+              click: () => mainWindow.webContents.executeJavaScript('document.execCommand("justifyLeft", false, null)')
+            },
+            {
+              label: 'Center',
+              accelerator: 'CommandOrControl+E',
+              click: () => mainWindow.webContents.executeJavaScript('document.execCommand("justifyCenter", false, null)')
+            },
+            {
+              label: 'Align Right',
+              accelerator: 'CommandOrControl+J',
+              click: () => mainWindow.webContents.executeJavaScript('document.execCommand("justifyRight", false, null)')
+            }
+          ]
+        }
       ]
     },
     {
@@ -152,6 +214,102 @@ function createMainWindow() {
 }
 
 let mainWindowRef;
+
+// Function to handle reload with unsaved changes check
+async function handleReloadWithUnsavedCheck(win) {
+  try {
+    const isDirty = await win.webContents.executeJavaScript('window.__app_isDirty === true');
+    if (!isDirty) {
+      win.reload();
+      return;
+    }
+  } catch (_) {
+    // If we cannot determine, allow reload
+    win.reload();
+    return;
+  }
+
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Save', 'Reload without Saving', 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    title: 'Unsaved Changes',
+    message: 'There are unsaved changes. What would you like to do?'
+  });
+  // 0 Save, 1 Reload without Saving, 2 Cancel
+  if (response === 0) {
+    // Save and then reload
+    win.webContents.send('action:save-pdf-and-reload');
+  } else if (response === 1) {
+    // Reload without saving
+    win.reload();
+  } // else cancel - do nothing
+}
+
+// Function to handle new file with unsaved changes check
+async function handleNewWithUnsavedCheck(win) {
+  try {
+    const isDirty = await win.webContents.executeJavaScript('window.__app_isDirty === true');
+    if (!isDirty) {
+      win.webContents.send('action:new-file');
+      return;
+    }
+  } catch (_) {
+    // If we cannot determine, allow new file
+    win.webContents.send('action:new-file');
+    return;
+  }
+
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Save', 'New without Saving', 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    title: 'Unsaved Changes',
+    message: 'There are unsaved changes. What would you like to do?'
+  });
+  // 0 Save, 1 New without Saving, 2 Cancel
+  if (response === 0) {
+    // Save and then create new file
+    win.webContents.send('action:save-pdf-and-new');
+  } else if (response === 1) {
+    // Create new file without saving
+    win.webContents.send('action:new-file');
+  } // else cancel - do nothing
+}
+
+// Function to handle close with unsaved changes check
+async function handleCloseWithUnsavedCheck(win) {
+  try {
+    const isDirty = await win.webContents.executeJavaScript('window.__app_isDirty === true');
+    if (!isDirty) {
+      win.close();
+      return;
+    }
+  } catch (_) {
+    // If we cannot determine, allow close
+    win.close();
+    return;
+  }
+
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Save', 'Quit without Saving', 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    title: 'Unsaved Changes',
+    message: 'There are unsaved changes. What would you like to do?'
+  });
+  // 0 Save, 1 Quit without Saving, 2 Cancel
+  if (response === 0) {
+    // Save and then close
+    win.webContents.send('action:save-pdf-and-close');
+  } else if (response === 1) {
+    // Quit without saving
+    win.close();
+  } // else cancel - do nothing
+}
 
 app.whenReady().then(() => {
   mainWindowRef = createMainWindow();

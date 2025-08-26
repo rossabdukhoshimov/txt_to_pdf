@@ -1,6 +1,4 @@
-function getTitleInput() {
-  return document.getElementById('docTitle');
-}
+
 
 function getEditor() {
   return document.getElementById('editor');
@@ -17,24 +15,7 @@ function getCurrentSizePx() {
   return sizeSelectCached ? sizeSelectCached.value : '12';
 }
 
-function stripFormattingFromPaste(event) {
-  event.preventDefault();
-  const text = event.clipboardData.getData('text/plain');
-  const currentSize = getCurrentSizePx();
-  const currentColor = document.getElementById('fontColorPicker')?.value || '#000000';
-  
-  // Create a temporary element to hold the text with current formatting
-  const tempSpan = document.createElement('span');
-  tempSpan.style.fontSize = `${currentSize}px`;
-  tempSpan.style.color = currentColor;
-  tempSpan.textContent = text;
-  
-  // Insert the formatted text
-  document.execCommand('insertHTML', false, tempSpan.outerHTML);
-  
-  // Mark as dirty
-  window.__app_isDirty = true;
-}
+
 
 function replaceFontTagsWithSpans(container, currentPx) {
   if (!container) return;
@@ -253,33 +234,25 @@ function installSelectionWatcher() {
   });
 }
 
-function setDocumentContent(title, body) {
-  const titleEl = getTitleInput();
+function setDocumentContent(body) {
   const editorEl = getEditor();
-  if (titleEl) titleEl.value = title || '';
   if (editorEl) editorEl.innerHTML = body || '';
 }
 
 function getPrintableHTML() {
-  const titleEl = getTitleInput();
   const editorEl = getEditor();
-  const title = (titleEl?.value || '').trim() || 'Untitled Document';
   const content = editorEl?.innerHTML || '';
 
   return `
     <section class="printable">
-      <h1 style="margin:0 0 12px 0; font-size: 22px;">${title}</h1>
-      <div style="height:1px;background:#e5e7eb22;margin:12px 0 18px 0;"></div>
       ${content}
     </section>
   `;
 }
 
 function deriveDefaultPdfPath() {
-  const titleEl = getTitleInput();
-  const title = (titleEl?.value || 'Untitled Document').trim() || 'Untitled Document';
   if (!currentOpenedFilePath) {
-    return `${title}.pdf`;
+    return 'Untitled Document.pdf';
   }
   const parts = currentOpenedFilePath.split('/');
   const fileName = parts.pop() || '';
@@ -293,15 +266,12 @@ async function saveAsPdf() {
   const original = document.body.innerHTML;
   const printable = getPrintableHTML();
   const previousTitle = document.title;
-  const titleEl = getTitleInput();
-  const exportTitle = (titleEl?.value || 'Untitled Document').trim() || 'Untitled Document';
-  document.title = exportTitle; // Set PDF metadata title
+  document.title = 'Text to PDF'; // Set PDF metadata title
   const printStyles = `
     <style>
       html, body { background: #ffffff !important; color: #000000 !important; margin: 0; padding: 0; }
       body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
       .printable { padding: 32px 40px; max-width: 750px; margin: 0 auto; }
-      h1 { color: #000000; }
       p, div, li { color: #000000; }
       ul, ol { margin: 0 0 10px 1.25rem; }
       p { margin: 0 0 10px 0; }
@@ -338,7 +308,7 @@ async function saveAsPdf() {
 function attachHandlers() {
   document.getElementById('savePdfBtn').onclick = saveAsPdf;
   document.getElementById('newBtn').onclick = () => {
-    setDocumentContent('', '');
+    setDocumentContent('');
     const editorEl = getEditor();
     if (editorEl) editorEl.focus();
     currentOpenedFilePath = null;
@@ -350,7 +320,7 @@ function attachHandlers() {
       if (result && result.ok) {
         currentOpenedFilePath = result.filePath || null;
         const name = (currentOpenedFilePath || '').split('/').pop() || 'Untitled Document';
-        setDocumentContent(name.replace(/\.(txt|md|markdown|pdf|html|htm)$/i, ''), '');
+        setDocumentContent('');
         const editorEl = getEditor();
         if (editorEl) {
           editorEl.innerHTML = result.content || '';
@@ -362,19 +332,14 @@ function attachHandlers() {
 
   if (window.api) {
     window.api.onNewFile(() => {
-      setDocumentContent('', '');
+      setDocumentContent('');
       const editorEl = getEditor();
       if (editorEl) editorEl.focus();
       currentOpenedFilePath = null;
       window.__app_isDirty = false;
     });
     window.api.onOpenFileContent(({ content, filePath }) => {
-      const name = (filePath || '').split('/').pop() || 'Untitled Document';
-      setDocumentContent(name.replace(/\.(txt|md|markdown|html|htm)$/i, ''), '');
-      const editorEl = getEditor();
-      if (editorEl) {
-        editorEl.innerHTML = content || '';
-      }
+      setDocumentContent(content || '');
       currentOpenedFilePath = filePath || null;
       window.__app_isDirty = false;
     });
@@ -411,8 +376,7 @@ function attachHandlers() {
     // Ensure CSS-based styling is preferred where possible
     try { document.execCommand('styleWithCSS', false, true); } catch (_) {}
     
-    // Add paste event listener to strip formatting
-    editorEl.addEventListener('paste', stripFormattingFromPaste);
+
     
     editorEl.addEventListener('input', () => {
       // Clean up any <font> tags introduced by execCommand
@@ -441,12 +405,7 @@ function attachHandlers() {
     });
   }
 
-  const titleEl = getTitleInput();
-  if (titleEl) {
-    titleEl.addEventListener('input', () => {
-      window.__app_isDirty = true;
-    });
-  }
+
 
   installSelectionWatcher();
 
@@ -456,6 +415,26 @@ function attachHandlers() {
       const res = await saveAsPdf();
       if (res && res.ok) {
         await window.api.requestClose();
+      }
+    });
+    
+    // Handle 'save and reload' flow initiated by main process
+    window.api.onSaveAndReload(async () => {
+      const res = await saveAsPdf();
+      if (res && res.ok) {
+        window.location.reload();
+      }
+    });
+    
+    // Handle 'save and new' flow initiated by main process
+    window.api.onSaveAndNew(async () => {
+      const res = await saveAsPdf();
+      if (res && res.ok) {
+        setDocumentContent('');
+        const editorEl = getEditor();
+        if (editorEl) editorEl.focus();
+        currentOpenedFilePath = null;
+        window.__app_isDirty = false;
       }
     });
   }

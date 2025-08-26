@@ -18,8 +18,8 @@ Features
   - Font size chooser (10–24 px)
   - Font color picker with clear option
 - Smart paste behavior
-  - Pasted text automatically adopts current font size and color
-  - Original formatting is stripped to match destination formatting
+  - Pasted text preserves original formatting (colors, font sizes, styling)
+  - No automatic formatting conversion on paste
 - Smart font sizing behavior
   - Dropdown reflects the current selection/caret size
   - Changing size with no selection applies to new typing
@@ -59,14 +59,19 @@ Usage Notes
 -----------
 - The editor uses a dark theme for writing, but PDFs are saved on plain white pages.
 - PDF import extracts the textual content for editing (layout/images are not preserved).
-- The window title during export is set to your document title so the PDF metadata title matches.
+
 
 Keyboard Shortcuts
 ------------------
 - New: Cmd+N
 - Open: Cmd+O
 - Save (Export to PDF): Cmd+S
-- Bold/Italic/Underline: standard platform shortcuts
+- Bold: Cmd+B
+- Italic: Cmd+I
+- Underline: Cmd+U
+- Align Left: Cmd+L
+- Center: Cmd+E
+- Align Right: Cmd+J
 
 Project Scripts
 ---------------
