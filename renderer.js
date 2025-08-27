@@ -256,6 +256,28 @@ function getPrintableHTML() {
   `;
 }
 
+function processContentForPDF(content) {
+  // Create a temporary div to process the content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = content;
+  
+  // Get the default text color from the editor
+  const editorEl = getEditor();
+  const defaultColor = window.getComputedStyle(editorEl).color; // This should be the default white color
+  
+  // Find all spans with custom colors and ensure they're preserved
+  const coloredSpans = tempDiv.querySelectorAll('span[style*="color"]');
+  coloredSpans.forEach(span => {
+    const currentColor = span.style.color;
+    if (currentColor && currentColor !== defaultColor) {
+      // This is a custom color, preserve it by adding a CSS variable
+      span.style.setProperty('--preserved-color', currentColor);
+    }
+  });
+  
+  return tempDiv.innerHTML;
+}
+
 function deriveDefaultPdfPath() {
   if (!currentOpenedFilePath) {
     return 'Untitled Document.pdf';
@@ -270,7 +292,13 @@ function deriveDefaultPdfPath() {
 async function saveAsPdf() {
   // Swap the page to a printable wrapper, print to PDF, then revert
   const original = document.body.innerHTML;
-  const printable = getPrintableHTML();
+  const editorEl = getEditor();
+  const processedContent = processContentForPDF(editorEl?.innerHTML || '');
+  const printable = `
+    <section class="printable">
+      ${processedContent}
+    </section>
+  `;
   const previousTitle = document.title;
   document.title = 'Text to PDF'; // Set PDF metadata title
   const printStyles = `
@@ -282,7 +310,7 @@ async function saveAsPdf() {
       ul, ol { margin: 0 0 10px 1.25rem; }
       p { margin: 0 0 10px 0; }
       /* Preserve custom colors in PDF export */
-      span[style*="color"] { color: inherit !important; }
+      span[data-preserve-color] { color: var(--preserved-color) !important; }
       /* Map HTML font size levels (1-7) to readable sizes */
       font[size="1"] { font-size: 10px; }
       font[size="2"] { font-size: 12px; }
@@ -516,6 +544,11 @@ function attachHandlers() {
         currentOpenedFilePath = null;
         window.__app_isDirty = false;
       }
+    });
+    
+    // Handle 'save pdf' flow initiated by main process
+    window.api.onSavePdf(async () => {
+      await saveAsPdf();
     });
   }
 }

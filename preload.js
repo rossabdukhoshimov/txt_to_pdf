@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   onSaveAndClose: (callback) => ipcRenderer.on('action:save-pdf-and-close', callback),
   onSaveAndReload: (callback) => ipcRenderer.on('action:save-pdf-and-reload', callback),
   onSaveAndNew: (callback) => ipcRenderer.on('action:save-pdf-and-new', callback),
+  onSavePdf: (callback) => ipcRenderer.on('action:save-pdf', callback),
   requestSavePdf: (options) => ipcRenderer.invoke('save-current-pdf', options),
   openFileDialog: () => ipcRenderer.invoke('open-dialog'),
   requestClose: () => ipcRenderer.invoke('request-close')
