@@ -347,6 +347,10 @@ ipcMain.handle('save-current-pdf', async (event, opts) => {
       return { ok: false, canceled: true };
     }
 
+    // Set document title for PDF metadata using the actual saved filename
+    const actualFileName = filePath.split('/').pop().replace(/\.pdf$/, '');
+    await win.webContents.executeJavaScript(`document.title = "${actualFileName}";`);
+
     const pdfOptions = {
       marginsType: 0,
       printBackground: true,
@@ -369,6 +373,20 @@ ipcMain.handle('request-close', async (event) => {
   if (!win) return { ok: false };
   win.destroy();
   return { ok: true };
+});
+
+// IPC: Update PDF title after saving
+ipcMain.handle('update-pdf-title', async (event, title) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return { ok: false };
+  
+  try {
+    await win.webContents.executeJavaScript(`document.title = "${title}";`);
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to update PDF title:', error);
+    return { ok: false, error: String(error) };
+  }
 });
 
 // IPC: Open dialog (supports txt/md/pdf)

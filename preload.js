@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   onSaveAndNew: (callback) => ipcRenderer.on('action:save-pdf-and-new', callback),
   onSavePdf: (callback) => ipcRenderer.on('action:save-pdf', callback),
   requestSavePdf: (options) => ipcRenderer.invoke('save-current-pdf', options),
+  updatePdfTitle: (title) => ipcRenderer.invoke('update-pdf-title', title),
   openFileDialog: () => ipcRenderer.invoke('open-dialog'),
   requestClose: () => ipcRenderer.invoke('request-close')
 });

@@ -300,7 +300,20 @@ async function saveAsPdf() {
     </section>
   `;
   const previousTitle = document.title;
-  document.title = 'Text to PDF'; // Set PDF metadata title
+  // Set PDF metadata title to the actual filename
+  console.log('Current opened file path:', currentOpenedFilePath);
+  
+  // Try to get filename from currentOpenedFilePath
+  let fileName = 'Untitled Document';
+  if (currentOpenedFilePath) {
+    fileName = currentOpenedFilePath.split('/').pop().replace(/\.[^.]+$/, '');
+    console.log('Using filename from currentOpenedFilePath:', fileName);
+  } else {
+    console.log('No currentOpenedFilePath, using default filename');
+  }
+  
+  // Don't set title here - we'll set it after we know the actual saved filename
+  console.log('Will set PDF title after save dialog');
   const printStyles = `
     <style>
       html, body { background: #ffffff !important; color: #000000 !important; margin: 0; padding: 0; }
@@ -323,12 +336,23 @@ async function saveAsPdf() {
   `;
   document.body.innerHTML = `${printStyles}${printable}`;
   try {
-    const result = await window.api.requestSavePdf({ pageSize: 'A4', printBackground: false, defaultPath: deriveDefaultPdfPath() });
+    const result = await window.api.requestSavePdf({ 
+      pageSize: 'A4', 
+      printBackground: false, 
+      defaultPath: deriveDefaultPdfPath()
+    });
     if (!result.ok && !result.canceled) {
       console.error('PDF save failed:', result.error);
     }
     if (result.ok) {
       window.__app_isDirty = false;
+      // Update currentOpenedFilePath to the saved file path
+      if (result.filePath) {
+        currentOpenedFilePath = result.filePath;
+        console.log('Updated currentOpenedFilePath to saved file:', currentOpenedFilePath);
+        
+
+      }
     }
     return result;
   } finally {
@@ -373,8 +397,10 @@ function attachHandlers() {
       window.__app_isDirty = false;
     });
     window.api.onOpenFileContent(({ content, filePath }) => {
+      console.log('Opening file with path:', filePath);
       setDocumentContent(content || '');
       currentOpenedFilePath = filePath || null;
+      console.log('Set currentOpenedFilePath to:', currentOpenedFilePath);
       window.__app_isDirty = false;
     });
   }
