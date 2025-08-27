@@ -135,15 +135,21 @@ function applyFontColor(color) {
     return;
   }
 
+  // For selection, apply color to the selected text
   const contents = range.extractContents();
   const span = document.createElement('span');
   span.style.color = color;
   span.appendChild(contents);
   range.insertNode(span);
+  
+  // Select the newly created span
   const newRange = document.createRange();
   newRange.selectNodeContents(span);
   sel.removeAllRanges();
   sel.addRange(newRange);
+  
+  // Mark as dirty
+  window.__app_isDirty = true;
 }
 
 function removeFontColor() {
@@ -387,13 +393,87 @@ function attachHandlers() {
   }
 
   // Color picker functionality
-  const colorPicker = document.getElementById('fontColorPicker');
-  if (colorPicker) {
-    colorPicker.addEventListener('change', () => {
-      const color = colorPicker.value;
-      applyFontColor(color);
+  let currentSelectedColor = '#000000';
+  let savedSelection = null;
+  const colorPickerBtn = document.getElementById('colorPickerBtn');
+  const colorPickerDialog = document.getElementById('colorPickerDialog');
+  const colorPreview = document.querySelector('.color-preview');
+  
+  if (colorPickerBtn) {
+    colorPickerBtn.addEventListener('click', () => {
+      // Save the current selection before opening dialog
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        savedSelection = sel.getRangeAt(0).cloneRange();
+      }
+      colorPickerDialog.classList.add('show');
+    });
+  }
+  
+  // Color palette options
+  document.querySelectorAll('.color-option').forEach(option => {
+    option.addEventListener('click', () => {
+      // Remove previous selection
+      document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+      // Select current option
+      option.classList.add('selected');
+      currentSelectedColor = option.getAttribute('data-color');
+    });
+  });
+  
+  // Custom color input
+  const customColorInput = document.getElementById('customColorInput');
+  if (customColorInput) {
+    customColorInput.addEventListener('change', () => {
+      currentSelectedColor = customColorInput.value;
+      // Remove selection from palette
+      document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    });
+  }
+  
+  // Apply color button
+  const applyColorBtn = document.getElementById('applyColorBtn');
+  if (applyColorBtn) {
+    applyColorBtn.addEventListener('click', () => {
+      // Restore the saved selection if it exists
+      if (savedSelection) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(savedSelection);
+        savedSelection = null; // Clear saved selection
+      }
+      
+      applyFontColor(currentSelectedColor);
+      updateColorPreview(currentSelectedColor);
+      colorPickerDialog.classList.remove('show');
       editorEl?.focus();
     });
+  }
+  
+  // Cancel button
+  const cancelColorBtn = document.getElementById('cancelColorBtn');
+  if (cancelColorBtn) {
+    cancelColorBtn.addEventListener('click', () => {
+      savedSelection = null; // Clear saved selection
+      colorPickerDialog.classList.remove('show');
+      editorEl?.focus();
+    });
+  }
+  
+  // Close dialog when clicking outside
+  colorPickerDialog.addEventListener('click', (e) => {
+    if (e.target === colorPickerDialog) {
+      savedSelection = null; // Clear saved selection
+      colorPickerDialog.classList.remove('show');
+      editorEl?.focus();
+    }
+  });
+  
+  // Function to update color preview
+  function updateColorPreview(color) {
+    if (colorPreview) {
+      colorPreview.style.backgroundColor = color;
+    }
   }
 
   // Remove color button

@@ -49,12 +49,43 @@
           <option value="24">24</option>
         </select>
         <span class="sep"></span>
-        <label class="size-label" for="fontColorPicker">Color:</label>
-        <input type="color" id="fontColorPicker" class="color-picker" title="Font Color" value="#000000" />
+        <label class="size-label">Color:</label>
+        <button id="colorPickerBtn" class="tlb color-picker-btn" title="Font Color">
+          <div class="color-preview" style="background-color: #000000;"></div>
+        </button>
         <button id="removeColorBtn" class="tlb" title="Remove Color">Clear</button>
       </div>
       <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
     </main>
+
+    <!-- Color Picker Dialog -->
+    <div id="colorPickerDialog" class="color-dialog">
+      <div class="color-dialog-content">
+        <h3>Choose Color</h3>
+        <div class="color-palette">
+          <div class="color-option" data-color="#000000" style="background-color: #000000;"></div>
+          <div class="color-option" data-color="#ffffff" style="background-color: #ffffff; border: 1px solid #ccc;"></div>
+          <div class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></div>
+          <div class="color-option" data-color="#00ff00" style="background-color: #00ff00;"></div>
+          <div class="color-option" data-color="#0000ff" style="background-color: #0000ff;"></div>
+          <div class="color-option" data-color="#ffff00" style="background-color: #ffff00;"></div>
+          <div class="color-option" data-color="#ff00ff" style="background-color: #ff00ff;"></div>
+          <div class="color-option" data-color="#00ffff" style="background-color: #00ffff;"></div>
+          <div class="color-option" data-color="#ff8000" style="background-color: #ff8000;"></div>
+          <div class="color-option" data-color="#8000ff" style="background-color: #8000ff;"></div>
+          <div class="color-option" data-color="#008000" style="background-color: #008000;"></div>
+          <div class="color-option" data-color="#800000" style="background-color: #800000;"></div>
+        </div>
+        <div class="custom-color-section">
+          <label for="customColorInput">Custom Color:</label>
+          <input type="color" id="customColorInput" value="#000000" />
+        </div>
+        <div class="color-dialog-buttons">
+          <button id="applyColorBtn" class="tlb">Apply</button>
+          <button id="cancelColorBtn" class="tlb">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <script src="renderer.js"></script>
   </body>

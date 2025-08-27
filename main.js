@@ -47,7 +47,8 @@ function createMainWindow() {
             // Save and then close
             mainWindow.webContents.send('action:save-pdf-and-close');
           } else if (response === 1) {
-            // Quit without saving
+            // Quit without saving - force close without triggering the event again
+            mainWindow.removeAllListeners('close');
             mainWindow.close();
           } else if (response === 2) {
             // Cancel - window stays open (already prevented)
@@ -306,7 +307,8 @@ async function handleCloseWithUnsavedCheck(win) {
     // Save and then close
     win.webContents.send('action:save-pdf-and-close');
   } else if (response === 1) {
-    // Quit without saving
+    // Quit without saving - force close without triggering the event again
+    win.removeAllListeners('close');
     win.close();
   } // else cancel - do nothing
 }
