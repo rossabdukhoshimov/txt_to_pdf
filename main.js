@@ -28,7 +28,8 @@ function createMainWindow() {
     mainWindow.webContents.executeJavaScript('window.__app_isDirty === true')
       .then((isDirty) => {
         if (!isDirty) {
-          // No unsaved changes, allow close
+          // No unsaved changes, allow close by removing listeners and closing
+          mainWindow.removeAllListeners('close');
           mainWindow.close();
           return;
         }
@@ -55,11 +56,13 @@ function createMainWindow() {
           }
         }).catch(() => {
           // If dialog fails, allow close
+          mainWindow.removeAllListeners('close');
           mainWindow.close();
         });
       })
       .catch(() => {
         // If we cannot determine dirty state, allow close
+        mainWindow.removeAllListeners('close');
         mainWindow.close();
       });
   });
