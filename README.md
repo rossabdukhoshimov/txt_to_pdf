@@ -3,6 +3,12 @@ Text to PDF (macOS desktop app)
 
 A minimal Electron desktop editor for macOS that lets you create or open a document, format text, and save it as a white-background PDF. It supports opening `.txt`, `.md`, and extracting text from `.pdf` files for editing.
 
+## Demo
+
+Watch the app in action: [Text to PDF Demo](https://youtu.be/68POt9XGfAo)
+
+[![Text to PDF Demo](https://img.youtube.com/vi/68POt9XGfAo/0.jpg)](https://youtu.be/68POt9XGfAo)
+
 Features
 --------
 - New/Open/Save workflow
