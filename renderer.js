@@ -269,9 +269,32 @@ function processContentForPDF(content) {
   const coloredSpans = tempDiv.querySelectorAll('span[style*="color"]');
   coloredSpans.forEach(span => {
     const currentColor = span.style.color;
-    if (currentColor && currentColor !== defaultColor) {
+    // Check if this is a custom color (not default white/black)
+    if (currentColor && currentColor !== defaultColor && currentColor !== 'rgb(255, 255, 255)' && currentColor !== 'white') {
       // This is a custom color, preserve it by adding a CSS variable
       span.style.setProperty('--preserved-color', currentColor);
+      span.setAttribute('data-preserve-color', 'true');
+    }
+  });
+  
+  // Also check for any text that might have inherited colors from PDF import
+  // Look for spans without explicit color styling but with different computed colors
+  const allSpans = tempDiv.querySelectorAll('span');
+  allSpans.forEach(span => {
+    if (!span.style.color && !span.hasAttribute('data-preserve-color')) {
+      // Create a temporary element to check computed color
+      const testSpan = document.createElement('span');
+      testSpan.innerHTML = span.innerHTML;
+      testSpan.style.color = span.style.color || '';
+      document.body.appendChild(testSpan);
+      const computedColor = window.getComputedStyle(testSpan).color;
+      document.body.removeChild(testSpan);
+      
+      // If the computed color is not the default, preserve it
+      if (computedColor && computedColor !== defaultColor && computedColor !== 'rgb(255, 255, 255)' && computedColor !== 'white') {
+        span.style.setProperty('--preserved-color', computedColor);
+        span.setAttribute('data-preserve-color', 'true');
+      }
     }
   });
   

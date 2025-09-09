@@ -217,4 +217,9 @@ button:hover {
   max-width: 700px;
 }
 
+/* Preserve custom colors in PDF export */
+span[data-preserve-color] {
+  color: var(--preserved-color) !important;
+}
+
 

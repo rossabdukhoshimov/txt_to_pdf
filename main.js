@@ -420,13 +420,28 @@ async function handleOpenDialog(win) {
         const data = await pdfParse(dataBuffer);
         const textContent = (data && data.text) ? data.text : '';
         
-        // Convert plain text to basic HTML with paragraph breaks
-        content = textContent
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .map(line => `<p>${line}</p>`)
-          .join('');
+        // Convert plain text to HTML with proper paragraph structure
+        // Group consecutive non-empty lines into paragraphs
+        const lines = textContent.split('\n').map(line => line.trim());
+        const paragraphs = [];
+        let currentParagraph = [];
+        
+        for (const line of lines) {
+          if (line.length > 0) {
+            currentParagraph.push(line);
+          } else if (currentParagraph.length > 0) {
+            // Empty line - end current paragraph
+            paragraphs.push(currentParagraph.join(' '));
+            currentParagraph = [];
+          }
+        }
+        
+        // Add final paragraph if exists
+        if (currentParagraph.length > 0) {
+          paragraphs.push(currentParagraph.join(' '));
+        }
+        
+        content = paragraphs.map(p => `<p>${p}</p>`).join('');
           
         console.log('PDF extracted successfully with basic formatting');
       } catch (error) {
