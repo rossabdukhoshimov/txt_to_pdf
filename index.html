@@ -54,6 +54,8 @@
           <div class="color-preview" style="background-color: #000000;"></div>
         </button>
         <button id="removeColorBtn" class="tlb" title="Remove Color">Clear</button>
+        <span class="sep"></span>
+        <button id="supportBtn" class="tlb support-btn" title="Tip Jar - Support this project">Tip Jar</button>
       </div>
       <div id="editor" class="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
     </main>
@@ -83,6 +85,34 @@
         <div class="color-dialog-buttons">
           <button id="applyColorBtn" class="tlb">Apply</button>
           <button id="cancelColorBtn" class="tlb">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tip Jar Dialog -->
+    <div id="tipJarDialog" class="tip-dialog">
+      <div class="tip-dialog-content">
+        <h3>Tip Jar - Support Text to PDF</h3>
+        <p>If you enjoy using this app, consider supporting its development!</p>
+        <div class="tip-options">
+          <button class="tip-option" data-product="tip_coffee">
+            <span class="tip-emoji">☕</span>
+            <span class="tip-amount">$1</span>
+            <span class="tip-label">Buy me a coffee</span>
+          </button>
+          <button class="tip-option" data-product="tip_lunch">
+            <span class="tip-emoji">🍕</span>
+            <span class="tip-amount">$5</span>
+            <span class="tip-label">Buy me lunch</span>
+          </button>
+          <button class="tip-option" data-product="tip_support">
+            <span class="tip-emoji">🚀</span>
+            <span class="tip-amount">$10</span>
+            <span class="tip-label">Support future updates</span>
+          </button>
+        </div>
+        <div class="tip-dialog-buttons">
+          <button id="closeTipBtn" class="tlb">Close</button>
         </div>
       </div>
     </div>

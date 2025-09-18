@@ -8,24 +8,65 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dist:mas": "electron-builder --mac mas",
+    "dist:mas-dev": "electron-builder --mac mas --publish never --config.mac.identity=\"Apple Development: hamroz.abduhoshimov@gmail.com (4A9J6DH354)\"",
+    "test-build": "electron-builder --mac dmg --publish never --config.mac.identity=null",
+    "dist:dmg": "electron-builder --mac dmg"
   },
   "devDependencies": {
-    "electron": "^30.0.0",
+    "electron": "^38.1.2",
     "electron-builder": "^24.6.0"
   },
   "dependencies": {
+    "@electron/remote": "^2.1.3",
+    "electron-store": "^8.1.0",
+    "mammoth": "^1.10.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.4.54"
   },
   "build": {
-    "appId": "com.example.txttopdf",
+    "appId": "com.khamrozabdukhoshimov.txttopdf",
+    "productName": "Text to PDF",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "!dist/**/*",
+      "!*.md"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
-      ]
+        {
+          "target": "mas",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "entitlements": "assets/entitlements.mas.plist",
+      "entitlementsInherit": "assets/entitlements.mas.inherit.plist",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "mas": {
+      "entitlements": "assets/entitlements.mas.plist",
+      "entitlementsInherit": "assets/entitlements.mas.inherit.plist",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     }
   }
 }

@@ -10,7 +10,12 @@ contextBridge.exposeInMainWorld('api', {
   requestSavePdf: (options) => ipcRenderer.invoke('save-current-pdf', options),
   updatePdfTitle: (title) => ipcRenderer.invoke('update-pdf-title', title),
   openFileDialog: () => ipcRenderer.invoke('open-dialog'),
-  requestClose: () => ipcRenderer.invoke('request-close')
+  requestClose: () => ipcRenderer.invoke('request-close'),
+  // In-App Purchase methods
+  iapGetProducts: () => ipcRenderer.invoke('iap-get-products'),
+  iapPurchase: (productId) => ipcRenderer.invoke('iap-purchase', productId),
+  iapRestore: () => ipcRenderer.invoke('iap-restore'),
+  iapGetPurchases: () => ipcRenderer.invoke('iap-get-purchases')
 });
 
 

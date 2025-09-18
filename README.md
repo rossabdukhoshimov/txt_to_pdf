@@ -12,7 +12,8 @@ Watch the app in action: [Text to PDF Demo](https://youtu.be/68POt9XGfAo)
 Features
 --------
 - New/Open/Save workflow
-  - Open `.txt`, `.md`, `.html`, or `.pdf` files
+  - Open `.txt`, `.md`, `.html`, `.pdf`, or `.docx` files
+  - Word documents preserve all formatting (bold, italic, colors, fonts, etc.)
   - PDF files extract text content with basic paragraph formatting
   - HTML files preserve all formatting
   - Text files are converted to HTML with proper paragraph breaks
@@ -88,6 +89,7 @@ Tech Stack
 ----------
 - Electron (Main/Renderer)
 - `pdf-parse` for importing text from PDF
+- `mammoth` for importing Word documents with formatting
 
 Troubleshooting
 ---------------

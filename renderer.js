@@ -604,4 +604,133 @@ function attachHandlers() {
 
 attachHandlers();
 
+// Tip Jar functionality
+function initializeTipJar() {
+  const supportBtn = document.getElementById('supportBtn');
+  const tipJarDialog = document.getElementById('tipJarDialog');
+  const closeTipBtn = document.getElementById('closeTipBtn');
+  const tipOptions = document.querySelectorAll('.tip-option');
+
+  // Open Tip Jar dialog
+  supportBtn.addEventListener('click', () => {
+    tipJarDialog.style.display = 'flex';
+    loadTipProducts();
+  });
+
+  // Close Tip Jar dialog
+  closeTipBtn.addEventListener('click', () => {
+    tipJarDialog.style.display = 'none';
+  });
+
+  // Close dialog when clicking outside
+  tipJarDialog.addEventListener('click', (e) => {
+    if (e.target === tipJarDialog) {
+      tipJarDialog.style.display = 'none';
+    }
+  });
+
+  // Handle tip option clicks
+  tipOptions.forEach(option => {
+    option.addEventListener('click', async () => {
+      const productId = option.getAttribute('data-product');
+      await handleTipPurchase(productId);
+    });
+  });
+}
+
+async function loadTipProducts() {
+  try {
+    const result = await window.api.iapGetProducts();
+    if (result.success) {
+      console.log('Tip products loaded:', result.products);
+    } else {
+      console.error('Failed to load tip products:', result.error);
+    }
+  } catch (error) {
+    console.error('Error loading tip products:', error);
+  }
+}
+
+async function handleTipPurchase(productId) {
+  try {
+    // Show loading state
+    const option = document.querySelector(`[data-product="${productId}"]`);
+    const originalContent = option.innerHTML;
+    option.innerHTML = '<span>Processing...</span>';
+    option.disabled = true;
+
+    const result = await window.api.iapPurchase(productId);
+    
+    if (result.success) {
+      // Show success message
+      option.innerHTML = '<span>✅ Thank you!</span>';
+      option.style.background = '#4CAF50';
+      
+      // Show thank you message
+      showThankYouMessage();
+      
+      // Close dialog after 2 seconds
+      setTimeout(() => {
+        document.getElementById('tipJarDialog').style.display = 'none';
+        // Reset button
+        option.innerHTML = originalContent;
+        option.disabled = false;
+        option.style.background = '';
+      }, 2000);
+    } else {
+      // Show error message
+      option.innerHTML = '<span>❌ Failed</span>';
+      option.style.background = '#f44336';
+      
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        option.innerHTML = originalContent;
+        option.disabled = false;
+        option.style.background = '';
+      }, 2000);
+      
+      console.error('Purchase failed:', result.error);
+    }
+  } catch (error) {
+    console.error('Purchase error:', error);
+    // Reset button
+    const option = document.querySelector(`[data-product="${productId}"]`);
+    option.innerHTML = originalContent;
+    option.disabled = false;
+    option.style.background = '';
+  }
+}
+
+function showThankYouMessage() {
+  // Create a temporary thank you message
+  const thankYou = document.createElement('div');
+  thankYou.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    z-index: 10000;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  `;
+  thankYou.textContent = 'Thank you for your support! ❤️';
+  
+  document.body.appendChild(thankYou);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    if (thankYou.parentNode) {
+      thankYou.parentNode.removeChild(thankYou);
+    }
+  }, 3000);
+}
+
+// Initialize Tip Jar when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  initializeTipJar();
+});
+
 

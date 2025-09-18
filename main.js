@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const Store = require('electron-store');
+const { getProducts } = require('./iap-config');
 
 /**
  * Creates the main application window.
@@ -400,7 +402,7 @@ async function handleOpenDialog(win) {
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
       title: 'Open File',
       filters: [
-        { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf', 'html', 'htm'] },
+        { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf', 'html', 'htm', 'docx'] },
         { name: 'All Files', extensions: ['*'] }
       ],
       properties: ['openFile']
@@ -411,7 +413,23 @@ async function handleOpenDialog(win) {
     const filePath = filePaths[0];
     const ext = path.extname(filePath).toLowerCase();
     let content = '';
-    if (ext === '.pdf') {
+    if (ext === '.docx') {
+      // Parse Word document with formatting preservation
+      try {
+        const mammoth = require('mammoth');
+        const result = await mammoth.convertToHtml({ path: filePath });
+        content = result.value; // The HTML content
+        console.log('Word document converted successfully with formatting');
+        
+        // Log any conversion messages (warnings, etc.)
+        if (result.messages && result.messages.length > 0) {
+          console.log('Conversion messages:', result.messages);
+        }
+      } catch (error) {
+        console.error('Word document parsing error:', error);
+        content = '';
+      }
+    } else if (ext === '.pdf') {
       // For now, use the simpler pdf-parse approach
       // We can enhance this later with better formatting preservation
       try {
@@ -465,5 +483,94 @@ async function handleOpenDialog(win) {
     return { ok: false, error: String(error) };
   }
 }
+
+// Initialize In-App Purchases (Simplified Secure Implementation)
+let store = new Store();
+
+// Simplified IAP implementation for development/testing
+// In production, you'll need to implement proper App Store receipt validation
+async function initializeIAP() {
+  try {
+    console.log('In-App Purchases initialized (development mode)');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize In-App Purchases:', error);
+    return false;
+  }
+}
+
+// IPC handlers for In-App Purchases
+ipcMain.handle('iap-get-products', async () => {
+  try {
+    const products = getProducts();
+    // Return mock products for development
+    const mockProducts = Object.values(products).map(product => ({
+      productId: product.id,
+      title: product.name,
+      description: `Support the developer with ${product.emoji}`,
+      price: product.price,
+      currency: 'USD'
+    }));
+    
+    return { success: true, products: mockProducts };
+  } catch (error) {
+    console.error('Error getting products:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('iap-purchase', async (event, productId) => {
+  try {
+    // For development: simulate a successful purchase
+    // In production, this should validate with Apple's servers
+    const products = getProducts();
+    const product = Object.values(products).find(p => p.id === productId);
+    
+    if (!product) {
+      return { success: false, error: 'Product not found' };
+    }
+    
+    // Simulate purchase processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Store the purchase as completed
+    const purchases = store.get('completedPurchases', []);
+    const newPurchase = {
+      productId,
+      transactionId: `mock_${Date.now()}`,
+      purchaseDate: new Date().toISOString(),
+      amount: product.price
+    };
+    
+    purchases.push(newPurchase);
+    store.set('completedPurchases', purchases);
+    
+    return { success: true, purchase: newPurchase };
+  } catch (error) {
+    console.error('Purchase error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('iap-restore', async () => {
+  try {
+    // Return stored purchases
+    const purchases = store.get('completedPurchases', []);
+    return { success: true, purchases };
+  } catch (error) {
+    console.error('Restore error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('iap-get-purchases', () => {
+  const purchases = store.get('completedPurchases', []);
+  return { success: true, purchases };
+});
+
+// Initialize IAP when app is ready
+app.whenReady().then(() => {
+  initializeIAP();
+});
 
 
